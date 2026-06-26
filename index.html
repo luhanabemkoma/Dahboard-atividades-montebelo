@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monte Belo — Dashboard de Obra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏘️</div>
+    <div>
+      <h1>Monte Belo</h1>
+      <span>Acompanhamento de Obra · Codó/MA</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" id="btn-import" title="Importar JSON">
+      📥 Importar
+    </button>
+    <button class="btn" id="btn-export" title="Exportar JSON">
+      📤 Exportar
+    </button>
+    <button class="btn btn-primary" id="btn-edit-mode">
+      ✏️ Edição em Lote
+    </button>
+  </div>
+  <input type="file" id="file-input" accept=".json" style="display:none">
+</header>
+
+<!-- ════════════════════════════════════════════
+     MAIN
+════════════════════════════════════════════ -->
+<div class="main-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Search -->
+    <div class="sidebar-section">
+      <h3>Buscar lote</h3>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Ex: Q01-L05 ou Q03...">
+      </div>
+    </div>
+
+    <!-- Filter by status -->
+    <div class="sidebar-section">
+      <h3>Filtrar por etapa</h3>
+      <div class="filter-list" id="filter-list"></div>
+    </div>
+
+    <!-- Quadra chips -->
+    <div class="sidebar-section">
+      <h3>Filtrar por quadra</h3>
+      <div class="quadra-grid" id="quadra-chips"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sidebar-section">
+      <h3>Indicadores</h3>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🏗️</div>
+          <div>
+            <div class="stat-label">Total de unidades</div>
+            <div class="stat-value" id="stat-total">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔍</div>
+          <div>
+            <div class="stat-label">Visíveis (filtro ativo)</div>
+            <div class="stat-value" id="stat-filtered">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div>
+            <div class="stat-label">Finalizadas</div>
+            <div class="stat-value" id="stat-fin">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-wrap" style="margin-top:10px">
+        <div class="progress-label">
+          <span>Avanço geral</span>
+          <span id="progress-pct" style="color:var(--accent);font-weight:700">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+        </div>
+        <div style="font-size:.68rem;color:var(--text-muted);margin-top:4px">
+          Pesos: Fundação 10% · Alvenaria 30% · Reboco 55% · Pintura 80% · Finalizada 100%
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-grid">🗺️ Mapa</button>
+        <button class="view-btn" id="btn-table">📋 Tabela</button>
+      </div>
+      <span class="toolbar-info" id="toolbar-info">Carregando...</span>
+    </div>
+
+    <!-- Map scroll -->
+    <div class="map-scroll">
+
+      <!-- GRID VIEW -->
+      <div id="grid-view">
+        <div class="quadras-container" id="quadras-container"></div>
+      </div>
+
+      <!-- TABLE VIEW -->
+      <div id="table-view" style="display:none">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Quadra</th>
+              <th>Lote</th>
+              <th>Status</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /map-scroll -->
+
+    <!-- Legend bar -->
+    <div class="legend-bar">
+      <span style="font-size:.7rem;color:var(--text-muted);font-weight:600;margin-right:4px">LEGENDA:</span>
+      <div class="legend-item"><div class="legend-dot" style="background:#6b7280"></div> Fundação</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div> Alvenaria</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Reboco</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Pintura</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Finalizada</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Pendente</div>
+    </div>
+
+  </main>
+</div><!-- /main-wrap -->
+
+
+<!-- ════════════════════════════════════════════
+     MODAL: Editar Lote
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2>🏠 <span id="modal-casa-title">Lote</span></h2>
+    <div class="lote-detail">
+      <div class="lote-detail-row">
+        <span>Quadra</span>
+        <strong id="detail-quadra">—</strong>
+      </div>
+      <div class="lote-detail-row">
+        <span>Código</span>
+        <strong id="detail-casa">—</strong>
+      </div>
+      <div class="lote-detail-row">
+        <span>Área</span>
+        <strong id="detail-area">—</strong>
+      </div>
+      <hr style="border-color:var(--border)">
+      <div class="form-group">
+        <label for="edit-status">Etapa atual</label>
+        <select id="edit-status">
+          <option value="pendente">⏳ Pendente</option>
+          <option value="fundacao">🏗️ Fundação</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="reboco">🪣 Reboco</option>
+          <option value="pintura">🎨 Pintura</option>
+          <option value="finalizada">✅ Finalizada</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" id="btn-modal-close">Cancelar</button>
+      <button class="btn btn-primary" id="btn-modal-save">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     MODAL: Edição em Lote
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="bulk-overlay">
+  <div class="modal">
+    <h2>✏️ Edição em Lote</h2>
+    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px">
+      Digite os códigos dos lotes separados por vírgula ou espaço.<br>
+      Exemplo: <code style="color:var(--accent)">Q01-L01, Q01-L02, Q02-L05</code>
+    </p>
+    <div class="modal-form">
+      <div class="form-group">
+        <label>Códigos dos lotes</label>
+        <input type="text" id="bulk-casas"
+               placeholder="Q01-L01, Q01-L02, Q03-L10 ...">
+      </div>
+      <div class="form-group">
+        <label>Nova etapa</label>
+        <select id="bulk-status">
+          <option value="pendente">⏳ Pendente</option>
+          <option value="fundacao">🏗️ Fundação</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="reboco">🪣 Reboco</option>
+          <option value="pintura">🎨 Pintura</option>
+          <option value="finalizada">✅ Finalizada</option>
+        </select>
+      </div>
+      <div id="bulk-result" style="font-size:.8rem;color:var(--pintura);white-space:pre-wrap;min-height:20px"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" id="btn-bulk-close">Fechar</button>
+      <button class="btn btn-primary" id="btn-bulk-apply">✅ Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
